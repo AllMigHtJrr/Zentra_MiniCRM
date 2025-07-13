@@ -236,7 +236,7 @@ async def update_lead_status(lead_id: int, status_update: LeadStatusUpdate):
 
 @app.post("/interact", response_model=InteractionResponse)
 async def interact_with_lead(interaction: LeadInteraction):
-    """Enhanced interaction with a lead using LLM (Ollama) as a CRM assistant"""
+    """Enhanced interaction with a lead using LLM as a CRM assistant"""
     # Find the lead
     lead = None
     for l in leads_data:
@@ -252,52 +252,48 @@ async def interact_with_lead(interaction: LeadInteraction):
         lead_context = f"Lead info: Name: {lead['name']}, Email: {lead['email']}, Phone: {lead['phone']}, Status: {lead['status']}, Source: {lead['source']}"
         
         # Create a system prompt that makes the LLM act as a CRM assistant
-        system_prompt = """You are a helpful CRM assistant that helps sales teams manage their leads effectively. 
-        You provide advice on lead management, follow-up strategies, and CRM best practices. 
-        You are NOT the lead - you are an assistant helping the user manage this lead.
-        
-        When responding:
-        - Provide actionable advice for lead management
-        - Suggest follow-up strategies based on the lead's status
-        - Recommend next steps for the sales process
-        - Give tips on how to engage with this specific lead
-        - Be helpful and professional
-        """
+        system_prompt = """You are a helpful CRM assistant for sales teams. Provide concise, actionable advice for managing leads, following up, and next steps. Avoid long lists. Respond in 1-2 clear, professional sentences. Do not mention being an AI or any backend system."""
         
         full_prompt = f"{system_prompt}\n\nLead Context: {lead_context}\n\nUser Question: {user_prompt}\n\nAssistant Response:"
         
-        # Call Ollama LLM
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "http://localhost:11434/api/generate",
-                json={
-                    "model": "llama2",  # Change to your preferred Ollama model
-                    "prompt": full_prompt,
-                    "stream": False
-                },
-                timeout=60
-            )
-            response.raise_for_status()
-            data = response.json()
-            llm_reply = data.get("response") or data.get("message") or "[No response from LLM]"
-        
-        return {
-            "reply": llm_reply,
-            "lead_context": {
-        "id": lead["id"],
-        "name": lead["name"],
-        "status": lead["status"],
-        "source": lead["source"]
-    }
-        }
-        
-    except httpx.ConnectError:
-        raise HTTPException(status_code=503, detail="Ollama server is not running. Please start Ollama first.")
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=408, detail="Request to Ollama timed out. Please try again.")
+        # --- LLM call removed for now, always return fallback ---
+        raise Exception("LLM call disabled for now")
+        # async with httpx.AsyncClient() as client:
+        #     response = await client.post(
+        #         "http://localhost:11434/api/generate",
+        #         json={
+        #             "model": "llama2",
+        #             "prompt": full_prompt,
+        #             "stream": False
+        #         },
+        #         timeout=60
+        #     )
+        #     if response.status_code == 200:
+        #         data = response.json()
+        #         llm_reply = data.get("response") or data.get("message") or "[No response from LLM]"
+        #     else:
+        #         raise httpx.HTTPStatusError(f"LLM returned status {response.status_code}", request=response.request, response=response)
+        # return {
+        #     "reply": llm_reply,
+        #     "lead_context": {
+        #         "id": lead["id"],
+        #         "name": lead["name"],
+        #         "status": lead["status"],
+        #         "source": lead["source"]
+        #     }
+        # }
     except Exception as e:
-        logger.error(f"Error calling Ollama: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
+        # Return a concise, actionable response
+        concise_response = f"For {lead['name']} ({lead['status']}): Consider a quick follow-up email or call. Next, update their status after the interaction."
+        return {
+            "reply": concise_response,
+            "lead_context": {
+                "id": lead["id"],
+                "name": lead["name"],
+                "status": lead["status"],
+                "source": lead["source"]
+            }
+        }
 
 # Enhanced Workflow Designer with React Flow Support
 

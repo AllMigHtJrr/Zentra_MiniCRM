@@ -15,16 +15,24 @@ from io import BytesIO
 from functools import wraps
 import pytesseract
 
+# PDF processing library
+try:
+    from pdf2image import convert_from_bytes
+    PDF2IMAGE_AVAILABLE = True
+except ImportError as e:
+    PDF2IMAGE_AVAILABLE = False
+    logging.warning(f"PDF2Image not available: {e}")
+    logging.warning("Install PDF2Image: pip install pdf2image")
+
 # OLM OCR Libraries
 try:
     from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
     import torch
-    from pdf2image import convert_from_bytes
     OLM_OCR_AVAILABLE = True
 except ImportError as e:
     OLM_OCR_AVAILABLE = False
     logging.warning(f"OLM OCR libraries not available: {e}")
-    logging.warning("Install OLM OCR libraries: pip install transformers torch pdf2image opencv-python accelerate")
+    logging.warning("Install OLM OCR libraries: pip install transformers torch opencv-python accelerate")
 
 logger = logging.getLogger(__name__)
 
@@ -273,6 +281,18 @@ def tesseract_ocr(file_content: bytes, filename: str) -> dict:
     try:
         text = ""
         if filename.lower().endswith('.pdf'):
+            # Check if PDF processing is available
+            if not PDF2IMAGE_AVAILABLE or 'convert_from_bytes' not in globals():
+                return {
+                    "name": None,
+                    "email": None,
+                    "phone": None,
+                    "raw_text": "",
+                    "confidence": 0.0,
+                    "source": "Document",
+                    "error": "PDF processing not available. Please install pdf2image: pip install pdf2image"
+                }
+            
             # Convert PDF to images
             images = convert_from_bytes(file_content)
             for image in images:
