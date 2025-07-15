@@ -463,4 +463,11 @@ python
 >>> from PIL import Image
 >>> img = Image.open('resume_optimized.png')
 >>> print(pytesseract.image_to_string(img))
-``` 
+```
+---
+### Team:
+1. Gayathri Parsam
+2. Niharika Peela
+3. Divya Bandla
+4. T. Vineeth Kumar
+
